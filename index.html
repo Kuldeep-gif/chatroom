@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat Room</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f9;
+    }
+    .chat-container {
+      width: 100%;
+      max-width: 600px;
+      margin: 20px auto;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: #fff;
+      overflow: hidden;
+    }
+    .chat-header {
+      background: #0078D7;
+      color: #fff;
+      padding: 10px;
+      text-align: center;
+    }
+    .chat-messages {
+      height: 400px;
+      overflow-y: auto;
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+    }
+    .chat-messages div {
+      margin: 10px 0;
+    }
+    .chat-form {
+      display: flex;
+      padding: 10px;
+    }
+    .chat-form input {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    .chat-form button {
+      background: #0078D7;
+      color: #fff;
+      border: none;
+      padding: 10px 15px;
+      margin-left: 5px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .share-link {
+      padding: 10px;
+      text-align: center;
+      background: #f4f4f9;
+      border-top: 1px solid #ddd;
+    }
+    .share-link input {
+      width: 90%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-database.js"></script>
+</head>
+<body>
+  <div class="chat-container">
+    <div class="chat-header">
+      <h2>Chat Room</h2>
+    </div>
+    <div class="chat-messages" id="messages"></div>
+    <form id="chatForm" class="chat-form">
+      <input type="text" id="messageInput" placeholder="Type your message..." required>
+      <button type="submit">Send</button>
+    </form>
+    <div class="share-link">
+      <p>Share this link:</p>
+      <input type="text" id="shareLink" readonly>
+    </div>
+  </div>
+
+  <script>
+    // Your Firebase configuration
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      databaseURL: "YOUR_DATABASE_URL",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    // Initialize Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Get or create a chat room ID
+    const urlParams = new URLSearchParams(window.location.search);
+    let roomId = urlParams.get("room");
+    if (!roomId) {
+      roomId = Math.random().toString(36).substring(2, 10);
+      window.location.search = `?room=${roomId}`;
+    }
+
+    // Reference for messages in the current room
+    const messagesRef = db.ref(`chatRooms/${roomId}/messages`);
+
+    // Update share link
+    const shareLinkInput = document.getElementById("shareLink");
+    shareLinkInput.value = window.location.href;
+
+    // Display messages in real-time
+    messagesRef.on("value", (snapshot) => {
+      const messagesDiv = document.getElementById("messages");
+      messagesDiv.innerHTML = "";
+      const messages = snapshot.val();
+      if (messages) {
+        for (const key in messages) {
+          const message = messages[key];
+          const messageDiv = document.createElement("div");
+          messageDiv.textContent = `${message.name}: ${message.text}`;
+          messagesDiv.appendChild(messageDiv);
+        }
+      }
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    });
+
+    // Handle form submission
+    const chatForm = document.getElementById("chatForm");
+    chatForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const messageInput = document.getElementById("messageInput");
+      const message = messageInput.value;
+      const name = "Anonymous"; // Replace with a login system for unique names
+
+      messagesRef.push({ name, text: message });
+      messageInput.value = "";
+    });
+  </script>
+</body>
+</html>
